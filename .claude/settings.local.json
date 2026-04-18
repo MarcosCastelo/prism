@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /c/Users/marco/OneDrive/Documentos/Github/openstream branch --show-current)"
+    ]
+  }
+}

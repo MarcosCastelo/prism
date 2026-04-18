@@ -255,15 +255,35 @@ async function fetchStream(streamId: string): Promise<StreamInfo> {
 
 Verificar se o arquivo/módulo já existe. Se existir, ler antes de editar.
 
+### Ao Iniciar Qualquer Nova Feature
+
+**Sempre criar uma branch nova antes de escrever qualquer código:**
+
+```bash
+git checkout -b feat/<nome-da-feature>
+# Exemplos:
+# git checkout -b feat/prism-core-identity
+# git checkout -b feat/chunk-transfer
+# git checkout -b feat/rs-encoder
+```
+
+Convenção de nomes:
+- `feat/<nome>` — nova funcionalidade
+- `fix/<nome>` — correção de bug
+- `chore/<nome>` — infraestrutura, docs, configuração
+
+**Nunca implementar diretamente na branch `main`.**
+
 ### Ao Implementar um Módulo
 
-1. Ler a seção correspondente no PRD da fase
-2. Implementar a interface exata definida (assinaturas de função, tipos, enums)
-3. Aplicar todas as regras de segurança relevantes
-4. Escrever os testes descritos no PRD
-5. Executar: `cargo clippy -p <crate> -- -D warnings`
-6. Executar: `cargo test -p <crate>`
-7. Só avançar para o próximo módulo se os testes passarem
+1. Confirmar que está em uma branch de feature (`git branch --show-current`)
+2. Ler a seção correspondente no PRD da fase
+3. Implementar a interface exata definida (assinaturas de função, tipos, enums)
+4. Aplicar todas as regras de segurança relevantes
+5. Escrever os testes descritos no PRD
+6. Executar: `cargo clippy -p <crate> -- -D warnings`
+7. Executar: `cargo test -p <crate>`
+8. Só avançar para o próximo módulo se os testes passarem
 
 ### Comandos de Verificação
 
