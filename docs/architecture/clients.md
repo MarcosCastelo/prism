@@ -1,17 +1,17 @@
 # **9\. Clientes - Streamer e Viewer**
 
-Esta seção documenta os dois clientes de usuário final do DecentraStream: o DecentraStream Studio (cliente do streamer) e o DecentraStream Player (cliente do viewer). Para cada um são especificados arquitetura técnica, UX, aparência visual, fluxos de interação e requisitos de plataforma, incluindo possibilidade de execução via web e mobile.
+Esta seção documenta os dois clientes de usuário final do Prism: o Prism Studio (cliente do streamer) e o Prism Player (cliente do viewer). Para cada um são especificados arquitetura técnica, UX, aparência visual, fluxos de interação e requisitos de plataforma, incluindo possibilidade de execução via web e mobile.
 
 ## **9.1 Visão Geral e Responsabilidades**
 
 | **Cliente**               | **Responsabilidade Principal**                                 | **Usuário Alvo**                            |
 | ------------------------- | -------------------------------------------------------------- | ------------------------------------------- |
-| **DecentraStream Studio** | Captura A/V, encode, ingest na rede P2P, gestão da live        | Streamer - desktop (Windows/macOS/Linux)    |
-| **DecentraStream Player** | Descoberta de streams, reprodução adaptativa, chat, identidade | Viewer - web, desktop, mobile (iOS/Android) |
+| **Prism Studio** | Captura A/V, encode, ingest na rede P2P, gestão da live        | Streamer - desktop (Windows/macOS/Linux)    |
+| **Prism Player** | Descoberta de streams, reprodução adaptativa, chat, identidade | Viewer - web, desktop, mobile (iOS/Android) |
 
 _Os dois clientes são independentes mas compartilham os módulos de identidade (Ed25519), DHT e chat. Um streamer usa o Studio; quem só assiste usa o Player. O mesmo usuário pode usar ambos._
 
-## **9.2 DecentraStream Studio - Cliente do Streamer**
+## **9.2 Prism Studio - Cliente do Streamer**
 
 ### **9.2.1 Arquitetura Técnica do Studio**
 
@@ -28,7 +28,7 @@ O Studio é uma aplicação desktop nativa construída com Tauri 2 (Rust + WebVi
 
 ### **9.2.2 Integração com OBS e Ferramentas Existentes**
 
-Streamers profissionais utilizam OBS Studio, Streamlabs, ou XSplit para compor cenas, gerenciar fontes e aplicar filtros visuais. DecentraStream Studio não substitui essas ferramentas - integra-se a elas como destino de saída.
+Streamers profissionais utilizam OBS Studio, Streamlabs, ou XSplit para compor cenas, gerenciar fontes e aplicar filtros visuais. Prism Studio não substitui essas ferramentas - integra-se a elas como destino de saída.
 
 **Modo 1 - Studio como destino RTMP local**
 
@@ -36,7 +36,7 @@ OBS envia stream via RTMP para o Studio rodando na mesma máquina como servidor 
 
 ┌─────────────────────┐ RTMP local ┌───────────────────────────┐
 
-│ OBS / Streamlabs │ ──────────────► │ DecentraStream Studio │
+│ OBS / Streamlabs │ ──────────────► │ Prism Studio │
 
 │ (composição de │ rtmp://localhost │ (recebe RTMP, re-encoda │
 
@@ -55,7 +55,7 @@ OBS envia stream via RTMP para o Studio rodando na mesma máquina como servidor 
 Plugin OBS em C++ que expõe o Studio como um "Output" nativo dentro do OBS. O stream vai diretamente do pipeline interno do OBS para o encoder AV1 do Studio sem passar por RTMP.
 
 - Elimina o overhead de RTMP e o re-encode duplo
-- Aparece como opção em OBS: Tools → DecentraStream → Go Live
+- Aparece como opção em OBS: Tools → Prism → Go Live
 - Configuração de chave, qualidade e visibilidade da stream sem sair do OBS
 - Recebe métricas de rede (viewers, bitrate, health) diretamente no OBS como dock panel
 
@@ -73,13 +73,13 @@ _⚠ O plugin nativo é complexo de manter para múltiplas versões do OBS. Reco
 
 ### **9.2.3 Layout e UX do Studio**
 
-O Studio segue o paradigma visual de ferramentas profissionais de broadcast (inspirado no OBS e no XSplit) mas simplificado para focar no que é específico do DecentraStream: saúde da rede P2P, distribuição de nós e estado da stream.
+O Studio segue o paradigma visual de ferramentas profissionais de broadcast (inspirado no OBS e no XSplit) mas simplificado para focar no que é específico do Prism: saúde da rede P2P, distribuição de nós e estado da stream.
 
 **Layout principal - janela única com 4 zonas**
 
 ╔══════════════════════════════════════════════════════════════════════════╗
 
-║ DecentraStream Studio \[─\] \[□\] \[×\] ║
+║ Prism Studio \[─\] \[□\] \[×\] ║
 
 ╠══════════╦═══════════════════════════════════════╦═══════════════════════╣
 
@@ -175,7 +175,7 @@ O Studio exibe o chat da live em um painel flutuante redimensionável que pode s
 - Moderadores recebem permissão de gerenciar blocklist em nome do streamer (blocklist assinada pelo moderador, referenciada na blocklist do streamer)
 - Campo de resposta rápida do streamer com atalho de teclado configurável
 
-## **9.3 DecentraStream Player - Cliente do Viewer**
+## **9.3 Prism Player - Cliente do Viewer**
 
 ### **9.3.1 Plataformas Suportadas**
 
@@ -214,7 +214,7 @@ O Player segue o paradigma de plataformas de streaming modernas (referência vis
 
 ╔══════════════════════════════════════════════════════════════════════════════╗
 
-║ DecentraStream \[🔍 Descobrir\] \[👤 Minha identidade\] \[⚙\] ║
+║ Prism \[🔍 Descobrir\] \[👤 Minha identidade\] \[⚙\] ║
 
 ╠══════════════════════════════════════════════════╦═══════════════════════════╣
 
@@ -276,7 +276,7 @@ Um pequeno indicador no canto inferior do player mostra a saúde da rede P2P par
 
 ┌────────────────────────┐
 
-│ DecentraStream \[≡\] │
+│ Prism \[≡\] │
 
 ├────────────────────────┤
 
@@ -423,7 +423,7 @@ O Player web é distribuído como PWA (Progressive Web App). Isso significa que 
 - Service Worker: cache de assets estáticos para funcionamento offline parcial (não é possível ver stream offline, mas a UI carrega instantaneamente)
 - Web App Manifest: ícone, nome, tema escuro configurado - aparece como app nativa quando instalado
 - Push Notifications (opcional): notificação quando streamer favorito entra ao vivo - requer permissão do usuário. Implementado via Notification API do browser (sem servidor push central - viewer consulta DHT periodicamente e dispara a notificação localmente)
-- Instalação: banner "Instalar DecentraStream" aparece após 3 visitas. Não intrusivo.
+- Instalação: banner "Instalar Prism" aparece após 3 visitas. Não intrusivo.
 
 ### **9.5.2 Limitações Técnicas por Plataforma**
 
@@ -489,4 +489,4 @@ Os clientes são desenvolvidos em paralelo com as fases de infraestrutura. A UI 
 | **Fase 3** | S13-S15 (meses 8-10)  | Chat panel no Studio; moderação; node tree visual; integração OBS via RTMP testada e documentada                | Chat completo no Player; identidade + gossip no browser; anchor node para histórico; tela de descoberta polida |
 | **Fase 4** | S16-S18 (meses 11-14) | Plugin OBS (opcional); settings polidas; onboarding wizard; testes de usabilidade; build multi-plataforma CI/CD | App React Native (iOS + Android); PWA install flow; notificações de live; testes de usabilidade mobile         |
 
-_DecentraStream v1.0 - Seção 9: Clientes. Apêndice ao documento principal de arquitetura._
+_Prism v1.0 - Seção 9: Clientes. Apêndice ao documento principal de arquitetura._

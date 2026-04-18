@@ -1,6 +1,4 @@
-**DECENTRA**
-
-**STREAM**
+**Prism**
 
 Plataforma de Streaming Descentralizado ao Vivo
 
@@ -16,7 +14,7 @@ Versão 1.0 - Abril 2026
 
 ## **1.1 Contexto e Motivação**
 
-DecentraStream é uma plataforma de streaming de vídeo ao vivo 100% descentralizada, sem nenhum ponto central de controle, falha ou censura. A plataforma elimina intermediários, distribui computação por toda a rede de participantes e garante que qualquer pessoa possa transmitir e assistir com qualidade comparável às plataformas centralizadas.
+Prism é uma plataforma de streaming de vídeo ao vivo 100% descentralizada, sem nenhum ponto central de controle, falha ou censura. A plataforma elimina intermediários, distribui computação por toda a rede de participantes e garante que qualquer pessoa possa transmitir e assistir com qualidade comparável às plataformas centralizadas.
 
 As plataformas centralizadas existentes apresentam limitações estruturais que só podem ser resolvidas com uma abordagem fundamentalmente diferente:
 
@@ -381,7 +379,7 @@ Viewer/Streamer → assina msg Ed25519 → gossip para 3 peers
 
 ## **3.1 Objetivo do Produto**
 
-DecentraStream entrega uma experiência de streaming ao vivo onde o streamer instala um cliente, configura sua chave e começa a transmitir - sem criar conta em servidor central, sem aprovação de plataforma e sem depender de infraestrutura de terceiros para a stream continuar funcionando.
+Prism entrega uma experiência de streaming ao vivo onde o streamer instala um cliente, configura sua chave e começa a transmitir - sem criar conta em servidor central, sem aprovação de plataforma e sem depender de infraestrutura de terceiros para a stream continuar funcionando.
 
 ## **3.2 Usuários e Casos de Uso Primários**
 
@@ -512,7 +510,7 @@ _Meta: stream de vídeo ao vivo fluindo do streamer até viewers através da red
 | Ingest e segmentação           | Cliente captura A/V, encode AV1/SVC via SVT-AV1, segmenta em chunks de 3s, assina e injeta em 4 nós seed | Chunks chegam nos 4 seeds com assinatura válida |
 | Topologia de árvore + failover | Fanout máximo de 8, dual-parent WebRTC estabelecido, failover automático quando nó cai                   | Failover em <1s sem interrupção do stream       |
 | Classes de nós e pipeline      | Nós Classe A fazem remux HLS; Classe B fazem transcoding L0→H.264; layer stripping no edge               | Viewer recebe HLS válido em player padrão       |
-| Reed-Solomon                   | Implementação RS(10,4) para fragmentação de chunks em nós Classe C; reconstrução funcional               | Chunk reconstruído com 4 de 10 fragmentos       |
+| Reed-Solomon                   | Implementação RS(10,4) para fragmentação de chunks em nós Classe C; reconstrução funcional               | Chunk reconstruído com quaisquer 10 de 14 fragmentos |
 | PTP + playout buffer           | Sincronização de relógio PTP entre nós, cálculo de deadline global, buffer determinístico                | Drift entre viewers < 200ms medido              |
 | NACK seletivo inter-nós        | Detecção de gap em sequence numbers, NACK propagado upstream, timeout baseado em deadline                | Taxa de frame loss < 0.1% em rede estável       |
 
@@ -745,4 +743,4 @@ bytes signature = 8; // assinatura do próprio nó
 | **Vector Clock**                | Estrutura de dados para rastrear causalidade em sistemas distribuídos - vetor de contadores por participante                  |
 | **Vnode**                       | Nó virtual no anel de consistent hashing - nós com mais capacidade possuem mais vnodes e recebem proporcionalmente mais carga |
 
-_DecentraStream v1.0 - Documento vivo. Atualizações refletem decisões de design tomadas durante o desenvolvimento._
+_Prism v1.0 - Documento vivo. Atualizações refletem decisões de design tomadas durante o desenvolvimento._

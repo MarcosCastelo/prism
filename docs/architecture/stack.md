@@ -1,4 +1,4 @@
-**DecentraStream**
+**Prism**
 
 **Tech Stack Analysis**
 
@@ -12,7 +12,7 @@ Versão 1.0 - Abril 2026
 
 # **1\. Metodologia de Avaliação**
 
-Cada tecnologia foi avaliada contra os requisitos específicos do DecentraStream. As fontes consultadas incluem benchmarks publicados em 2025-2026, documentação oficial, comparativos de produção e evidências de adoção em sistemas similares (streaming P2P, redes distribuídas, clientes desktop de alta performance).
+Cada tecnologia foi avaliada contra os requisitos específicos do Prism. As fontes consultadas incluem benchmarks publicados em 2025-2026, documentação oficial, comparativos de produção e evidências de adoção em sistemas similares (streaming P2P, redes distribuídas, clientes desktop de alta performance).
 
 Os critérios de avaliação variam por camada, mas o framework comum considera cinco dimensões:
 
@@ -46,7 +46,7 @@ _Decisões marcadas como ESCOLHIDO são a recomendação final. ALTERNATIVA indi
 
 A escolha entre Rust e Go é a mais relevante desta seção. Go foi a linguagem original proposta no documento de arquitetura e merece análise honesta contra Rust.
 
-### **Por que Rust supera Go para o core do DecentraStream**
+### **Por que Rust supera Go para o core do Prism**
 
 - rust-libp2p é atualmente a implementação mais ativa do libp2p (5.400+ stars, atualizações em abril/2026), com WebTransport e MoQ em desenvolvimento ativo. go-libp2p é maduro mas sua velocidade de desenvolvimento é menor.
 - O core da rede processa centenas de chunks de vídeo simultaneamente por stream ativa. Rust elimina o overhead do GC do Go em operações de alta frequência - crítico para manter latência previsível abaixo de 7s.
@@ -60,7 +60,7 @@ A escolha entre Rust e Go é a mais relevante desta seção. Go foi a linguagem 
 - go-libp2p é mais documentado e tem mais exemplos de produção em projetos blockchain/IPFS
 - CGO para SVT-AV1 funciona bem na prática mesmo com o overhead teórico
 
-_Decisão: Rust. O DecentraStream processa streams de vídeo em tempo real com requisitos de latência rígidos (7-20s). A ausência de GC pauses, a integração limpa com SVT-AV1 e o ecossistema rust-libp2p ativamente mantido justificam a curva de aprendizado. Tauri 2.0 resolve o problema do cliente com o mesmo runtime, eliminando a necessidade de uma linguagem separada para o Studio._
+_Decisão: Rust. O Prism processa streams de vídeo em tempo real com requisitos de latência rígidos (7-20s). A ausência de GC pauses, a integração limpa com SVT-AV1 e o ecossistema rust-libp2p ativamente mantido justificam a curva de aprendizado. Tauri 2.0 resolve o problema do cliente com o mesmo runtime, eliminando a necessidade de uma linguagem separada para o Studio._
 
 ## **2.3 Estratégia de Linguagens por Componente**
 
@@ -82,7 +82,7 @@ _Decisão: Rust. O DecentraStream processa streams de vídeo em tempo real com r
 
 Desde a publicação da arquitetura inicial, um desenvolvimento significativo ocorreu na indústria: o protocolo Media over QUIC (MoQ) saiu do IETF Working Group para produção real. Em agosto/2025, a Cloudflare lançou a primeira rede relay MoQ em produção (330+ cidades). Em setembro/2025, nanocosmos tornou-se o primeiro vendor a oferecer MoQ comercialmente.
 
-MoQ é diretamente relevante para o DecentraStream porque resolve exatamente o problema que motivou o design da camada de vídeo: combinar a latência do WebRTC com a escalabilidade do HLS, sobre QUIC, sem os 20 standards complexos do WebRTC.
+MoQ é diretamente relevante para o Prism porque resolve exatamente o problema que motivou o design da camada de vídeo: combinar a latência do WebRTC com a escalabilidade do HLS, sobre QUIC, sem os 20 standards complexos do WebRTC.
 
 ## **3.2 Comparativo de Protocolos de Transporte**
 
@@ -102,7 +102,7 @@ MoQ é diretamente relevante para o DecentraStream porque resolve exatamente o p
 _Decisão: QUIC via quinn (Rust) como transporte principal entre nós. MoQ como protocolo de mídia sobre QUIC para a camada de vídeo - adotado progressivamente conforme a spec estabiliza._
 
 - quinn é a implementação QUIC em Rust mais madura (usada em produção pelo Cloudflare, Mozilla). Integra nativamente com rust-libp2p como transport.
-- MoQ endereça diretamente o modelo de pub/subscribe de tracks de vídeo que o DecentraStream usa - a semântica de "named tracks" é exatamente o modelo de layers SVC que projetamos.
+- MoQ endereça diretamente o modelo de pub/subscribe de tracks de vídeo que o Prism usa - a semântica de "named tracks" é exatamente o modelo de layers SVC que projetamos.
 - A pesquisa de 2025 (IEEE) confirma 30% de melhoria de latência e 60% de melhoria no tempo de conexão de QUIC vs WebRTC - crucial para manter a stream dentro da janela de 7-20s.
 - Estratégia de rollout: QUIC puro na Fase 1-2; MoQ como layer de mídia na Fase 3-4 conforme a spec IETF avança para RFC final.
 - WebRTC mantido como fallback para nós que não suportam QUIC (firewalls corporativos que bloqueiam UDP 443) - via TURN relay transparente.
@@ -196,7 +196,7 @@ _Decisão: libp2p gossipsub para transporte de mensagens (já no stack, sem cód
 | **Complexidade de implementação** | Alta - daemon ptpd ou chrony+PTP              | Baixa - chrony ou ntpd padrão | Baixa - nativo no QUIC            |
 | **Funciona em internet pública**  | Sim - PTP over UDP                            | Sim                           | Sim - mas sem referência absoluta |
 
-Para o DecentraStream, o playout buffer de 7-20s tolera erros de sincronização de até ~500ms sem impacto perceptível. NTP disciplinado com chrony oferece precisão de ~10-50ms - suficiente para o caso de uso, com implementação trivial.
+Para o Prism, o playout buffer de 7-20s tolera erros de sincronização de até ~500ms sem impacto perceptível. NTP disciplinado com chrony oferece precisão de ~10-50ms - suficiente para o caso de uso, com implementação trivial.
 
 _Decisão: NTP disciplinado (chrony) como requisito de instalação do nó, com playout buffer dimensionado para absorver a imprecisão residual. PTP é mantido como opção avançada para operadores que querem reduzir drift para <1ms. Timestamps QUIC são usados para medir RTT inter-nós e calcular health scores dinamicamente._
 
@@ -213,7 +213,7 @@ _Decisão: NTP disciplinado (chrony) como requisito de instalação do nó, com 
 | **Adequação para chunks de 3s**  | Ideal - latência de encode/decode <1ms para chunks típicos     | Fountain codes têm vantagem apenas com loss >30% - atípico aqui     |
 | **Crate Rust nativa**            | Sim - sem FFI                                                  | Sim                                                                 |
 
-_Decisão: reed-solomon crate. Reed-Solomon com parâmetros configuráveis é a escolha padrão da indústria para este caso de uso. RaptorQ teria vantagem apenas em condições de loss muito alto (>30%), atípicas para a rede descentralizada do DecentraStream._
+_Decisão: reed-solomon crate. Reed-Solomon com parâmetros configuráveis é a escolha padrão da indústria para este caso de uso. RaptorQ teria vantagem apenas em condições de loss muito alto (>30%), atípicas para a rede descentralizada do Prism._
 
 # **10\. Player Web - HLS e Adaptive Bitrate**
 
@@ -295,4 +295,4 @@ Este documento identificou quatro mudanças significativas em relação às tecn
 | **Protocolo de mídia** | HLS P2P + WebRTC SFU      | QUIC + MoQ (fase 3-4) | Médio - MoQ não existia como protocolo produtivo em 2024; adoção incremental |
 | **Gossip do chat**     | Custom epidemic broadcast | libp2p gossipsub      | Baixo - comportamento idêntico, menos código para manter                     |
 
-_DecentraStream Tech Stack Analysis v1.0 - Documento vivo. Revisão recomendada a cada fase do roadmap._
+_Prism Tech Stack Analysis v1.0 - Documento vivo. Revisão recomendada a cada fase do roadmap._
