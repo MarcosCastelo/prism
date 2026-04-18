@@ -647,6 +647,41 @@ interface HlsPlayerProps {
 
 ---
 
+## Riscos e Pré-condições
+
+### Risco 1 — Cold Start da Rede (Alto Impacto)
+
+**Problema:** A Fase 2 assume que a DHT já tem nós seed operacionais para receber os chunks injetados pelo streamer. Sem pelo menos 2 seeds ativos, a rede simplesmente não existe — a implementação funcionará em testes locais mas falhará em produção desde o primeiro dia.
+
+**Natureza do risco:** Produto e operações, não código.
+
+**Mitigação obrigatória antes de considerar a Fase 2 concluída:**
+- A equipe deve operar pelo menos 3 seed nodes geograficamente distintos antes do primeiro teste E2E com streamer real
+- Os seeds devem estar listados como bootstrap peers embutidos no binário (conforme decidido na Fase 1)
+- Critério C1 e C2 deste PRD só são válidos se testados com seeds externos, não localhost
+
+**Ação:** Provisionar infraestrutura de seed nodes antes da Sprint 5.
+
+---
+
+### Risco 2 — SVT-AV1 Real-Time via FFI (Alto Impacto)
+
+**Problema:** O encode AV1/SVC via SVT-AV1 é o gargalo técnico de maior incerteza desta fase. Se `prism-encoder` não atingir encode em tempo real no hardware alvo com presets 9–12, toda a pipeline de vídeo da Fase 2 trava — e não há fallback definido sem uma decisão explícita de arquitetura.
+
+**Thresholds de viabilidade:**
+- 1080p60 (bitrate total ~5.5 Mbps): encode deve completar em < 16ms por frame em hardware de streamer típico (CPU 6+ cores, 2020+)
+- 720p30: encode em < 33ms por frame (mínimo aceitável)
+- Se nenhum preset atingir tempo real: acionar fallback H.264 no streamer (documentado em `docs/architecture/overview.md §7`)
+
+**Mitigação obrigatória:**
+> **Executar spike isolado de `prism-encoder` ANTES de iniciar os demais módulos da Fase 2.**
+>
+> O spike deve: compilar o FFI SVT-AV1, encodar 60 frames YUV420 em loop, medir throughput. Se throughput < 1.0× tempo real em preset 12 no hardware de CI: parar e decidir fallback antes de continuar.
+
+**Spike:** item 1 da Ordem de Implementação (Sprint 5–7) já reflete isso — `svt_av1.rs` é o primeiro arquivo a implementar. Não avançar para `segmenter.rs` sem validar throughput real.
+
+---
+
 ## Ordem de Implementação
 
 ```
