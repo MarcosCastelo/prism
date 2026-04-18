@@ -508,7 +508,7 @@ prism-core    = { path = "../prism-core" }
 prism-proto   = { path = "../prism-proto" }
 prism-encoder = { path = "../prism-encoder" }
 tokio         = { version = "1", features = ["full"] }
-nokhwa        = { version = "0.10", features = ["input-native"] }  # captura câmera/tela
+nokhwa        = { version = "0.11", features = ["input-native"] }  # captura câmera/tela
 rml_rtmp      = "0.8"  # servidor RTMP para receber do OBS
 anyhow        = "1"
 tracing       = "0.1"
@@ -521,7 +521,7 @@ reed-solomon-erasure = "6"
 axum          = "0.7"
 tower         = "0.4"
 hyper         = { version = "1", features = ["full"] }
-mp4           = "0.14"    # manipulação de fMP4
+mp4           = "0.14"    # leitura/parse de fMP4 — NÃO usar para escrita ao vivo; segmentação fMP4 é responsabilidade do prism-encoder/src/segmenter.rs via bytes raw
 bytes         = "1"
 ```
 

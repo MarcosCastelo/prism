@@ -395,12 +395,17 @@ pub async fn run_benchmark(config: &Config) -> CapacityReport;
 ```
 
 **Lógica de classe (quando não há override):**
-| Condição | Classe |
-|----------|--------|
-| `cpu_score < 0.3` e `bandwidth_mbps >= 10` | `"A"` |
-| `cpu_score >= 0.5` | `"B"` |
-| `bandwidth_mbps < 5` | `"C"` |
-| Nenhuma das anteriores | `"edge"` |
+
+As condições são avaliadas **na ordem abaixo** — primeira que satisfazer ganha:
+
+| Condição | Classe | Perfil típico |
+|----------|--------|---------------|
+| `cpu_score < 0.3` AND `bandwidth_mbps >= 10` | `"A"` | Servidor com boa rede e CPU modesta |
+| `cpu_score >= 0.5` | `"B"` | Máquina com boa CPU/GPU para transcoding |
+| `bandwidth_mbps < 5` | `"C"` | Link lento — especializado em armazenamento |
+| Qualquer outro perfil (ex: `cpu_score ∈ [0.3, 0.5)` e `bw ∈ [5, 10)`) | `"edge"` | Nó de entrega próximo ao viewer |
+
+> CPU e bandwidth moderados (ex: `cpu_score=0.4`, `bw=7 Mbps`) resultam em `"edge"` de forma intencional — esse perfil serve bem para entrega de HLS ao viewer sem exigir transcoding ou storage intensivo.
 
 **Cálculo de CPU score:** SHA-256 em loop por 2s, conta operações por segundo. Normaliza: `1_000_000 ops/s = score 1.0`. Clipa em [0.0, 1.0].
 
