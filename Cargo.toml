@@ -1,0 +1,4 @@
+[workspace]
+members = ["crates/prism-core", "crates/prism-proto", "crates/prism-node"]
+resolver = "2"
+

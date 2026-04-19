@@ -1,0 +1,13 @@
+syntax = "proto3";
+package prism;
+
+message NodeRecord {
+  bytes  node_id         = 1;
+  bytes  pubkey          = 2;
+  string region          = 3;
+  string capacity_class  = 4;
+  uint32 available_slots = 5;
+  float  health_score    = 6;
+  uint64 expires_at_ms   = 7;
+  bytes  signature       = 8;
+}
