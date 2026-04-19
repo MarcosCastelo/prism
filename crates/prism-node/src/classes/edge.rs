@@ -13,7 +13,7 @@ use axum::{
     Router,
 };
 use prism_core::hash::sha256;
-use prism_proto::VideoChunk;
+use prism_proto::{HlsManifest, VideoChunk};
 use tokio::net::TcpListener;
 
 // ---------------------------------------------------------------------------
@@ -125,15 +125,33 @@ pub async fn serve_viewer(
 pub struct EdgeState {
     /// Segment cache: (stream_id, sequence) → fMP4 bytes.
     pub segments: Arc<dashmap::DashMap<(String, u64), Vec<u8>>>,
+    /// Latest HLS manifest per stream_id (updated on every new chunk from Class A).
+    pub manifests: Arc<dashmap::DashMap<String, HlsManifest>>,
 }
 
 impl EdgeState {
     pub fn new() -> Self {
-        Self { segments: Arc::new(dashmap::DashMap::new()) }
+        Self {
+            segments: Arc::new(dashmap::DashMap::new()),
+            manifests: Arc::new(dashmap::DashMap::new()),
+        }
     }
 
     pub fn store_segment(&self, stream_id: &str, sequence: u64, data: Vec<u8>) {
         self.segments.insert((stream_id.to_string(), sequence), data);
+    }
+
+    /// Store (or replace) the latest manifest for a stream.
+    /// Only accepts manifests with a higher sequence than the current one to
+    /// prevent replay of stale manifests.
+    pub fn store_manifest(&self, manifest: HlsManifest) {
+        let newer = self
+            .manifests
+            .get(&manifest.stream_id)
+            .map_or(true, |cur| manifest.sequence > cur.sequence);
+        if newer {
+            self.manifests.insert(manifest.stream_id.clone(), manifest);
+        }
     }
 }
 
@@ -143,12 +161,16 @@ impl Default for EdgeState {
     }
 }
 
-/// Build the axum router for HLS segment delivery.
+/// Build the axum router for HLS delivery.
 ///
 /// Routes:
-///   GET /{stream_id}/{sequence}.m4s  → raw fMP4 segment
+///   GET /{stream_id}/master.m3u8          → HLS master playlist (all layers)
+///   GET /{stream_id}/{layer}/media.m3u8   → HLS media playlist for a layer
+///   GET /{stream_id}/{sequence}.m4s       → raw fMP4 segment
 pub fn build_edge_router(state: EdgeState) -> Router {
     Router::new()
+        .route("/{stream_id}/master.m3u8", get(handle_master))
+        .route("/{stream_id}/{layer}/media.m3u8", get(handle_media))
         .route("/{stream_id}/{sequence}.m4s", get(handle_segment))
         .with_state(state)
 }
@@ -160,6 +182,44 @@ pub async fn run_edge_server(addr: &str, state: EdgeState) -> anyhow::Result<()>
     tracing::info!(addr, "edge HTTP server listening");
     axum::serve(listener, router).await?;
     Ok(())
+}
+
+async fn handle_master(
+    Path(stream_id): Path<String>,
+    State(state): State<EdgeState>,
+) -> Response {
+    match state.manifests.get(&stream_id) {
+        Some(manifest) => (
+            StatusCode::OK,
+            [
+                ("content-type", "application/vnd.apple.mpegurl"),
+                ("cache-control", "no-cache"),
+            ],
+            manifest.master_m3u8.clone(),
+        )
+            .into_response(),
+        None => (StatusCode::NOT_FOUND, "no manifest for stream").into_response(),
+    }
+}
+
+async fn handle_media(
+    Path((stream_id, _layer)): Path<(String, String)>,
+    State(state): State<EdgeState>,
+) -> Response {
+    // All layers share the same sliding-window media playlist; actual layer
+    // selection happens at segment level via layer stripping in serve_viewer().
+    match state.manifests.get(&stream_id) {
+        Some(manifest) => (
+            StatusCode::OK,
+            [
+                ("content-type", "application/vnd.apple.mpegurl"),
+                ("cache-control", "no-cache"),
+            ],
+            manifest.media_m3u8.clone(),
+        )
+            .into_response(),
+        None => (StatusCode::NOT_FOUND, "no manifest for stream").into_response(),
+    }
 }
 
 async fn handle_segment(
@@ -321,5 +381,77 @@ mod tests {
         state.store_segment("stream1", 42, b"fmp4data".to_vec());
         let got = state.segments.get(&("stream1".to_string(), 42)).unwrap();
         assert_eq!(*got, b"fmp4data");
+    }
+
+    fn make_manifest(stream_id: &str, sequence: u64) -> HlsManifest {
+        HlsManifest {
+            stream_id: stream_id.to_string(),
+            sequence,
+            master_m3u8: format!("#EXTM3U\nmaster-{stream_id}").into_bytes(),
+            media_m3u8: format!("#EXTM3U\nmedia-{stream_id}-{sequence}").into_bytes(),
+            node_pubkey: vec![0u8; 32],
+            node_sig: vec![0u8; 64],
+        }
+    }
+
+    #[tokio::test]
+    async fn store_manifest_accepts_newer_sequence() {
+        let state = EdgeState::new();
+        state.store_manifest(make_manifest("s1", 1));
+        state.store_manifest(make_manifest("s1", 5));
+        let seq = state.manifests.get("s1").unwrap().sequence;
+        assert_eq!(seq, 5);
+    }
+
+    #[tokio::test]
+    async fn store_manifest_rejects_older_sequence() {
+        let state = EdgeState::new();
+        state.store_manifest(make_manifest("s1", 10));
+        state.store_manifest(make_manifest("s1", 3)); // stale — must be ignored
+        let seq = state.manifests.get("s1").unwrap().sequence;
+        assert_eq!(seq, 10, "stale manifest must not overwrite newer one");
+    }
+
+    #[tokio::test]
+    async fn http_master_returns_200_with_content_type() {
+        let state = EdgeState::new();
+        state.store_manifest(make_manifest("mystream", 1));
+
+        let resp = handle_master(
+            Path("mystream".to_string()),
+            State(state),
+        )
+        .await;
+
+        assert_eq!(resp.status(), StatusCode::OK);
+        let ct = resp.headers().get("content-type").unwrap().to_str().unwrap();
+        assert!(ct.contains("mpegurl"), "expected HLS content-type, got: {ct}");
+    }
+
+    #[tokio::test]
+    async fn http_master_returns_404_for_unknown_stream() {
+        let state = EdgeState::new();
+
+        let resp = handle_master(
+            Path("nope".to_string()),
+            State(state),
+        )
+        .await;
+
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn http_media_returns_200() {
+        let state = EdgeState::new();
+        state.store_manifest(make_manifest("s2", 7));
+
+        let resp = handle_media(
+            Path(("s2".to_string(), "0".to_string())),
+            State(state),
+        )
+        .await;
+
+        assert_eq!(resp.status(), StatusCode::OK);
     }
 }
