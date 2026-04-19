@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 import { Preview } from "./components/Preview";
 import { NetworkHealth } from "./components/NetworkHealth";
 import { EncodeSettings } from "./components/EncodeSettings";
@@ -13,6 +13,11 @@ export default function App() {
 
   async function handleGoLive() {
     setError(null);
+    if (!isTauri()) {
+      setIsStreaming(true);
+      setStreamId("dev-mock-stream-id");
+      return;
+    }
     try {
       const id = await invoke<string>("start_stream", {
         title: "Prism Stream",
@@ -27,6 +32,11 @@ export default function App() {
 
   async function handleStop() {
     setError(null);
+    if (!isTauri()) {
+      setIsStreaming(false);
+      setStreamId(null);
+      return;
+    }
     try {
       await invoke("stop_stream");
       setStreamId(null);

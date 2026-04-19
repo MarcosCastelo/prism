@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { isTauri } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 
 interface StreamMetrics {
@@ -28,6 +28,8 @@ export function NetworkHealth({ isStreaming, onGoLive, onStop }: NetworkHealthPr
 
   // Listen for periodic metrics-update events from the Tauri backend.
   useEffect(() => {
+    if (!isTauri()) return;
+
     let unlisten: UnlistenFn | null = null;
 
     listen<StreamMetrics>("metrics-update", (event) => {
