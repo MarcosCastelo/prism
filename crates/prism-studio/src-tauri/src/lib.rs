@@ -14,6 +14,7 @@ pub fn run() {
         stream_id: None,
         started_at: None,
         quality_preset: None,
+        shutdown_tx: None,
     }));
 
     app_handle(state)

@@ -3,11 +3,16 @@ name = "prism-node"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "prism_node"
+path = "src/lib.rs"
+
 [[bin]]
 name = "prism-node"
 path = "src/main.rs"
 
 [dependencies]
+prism-ingest = { path = "../prism-ingest" }
 prism-core  = { path = "../prism-core" }
 prism-proto = { path = "../prism-proto" }
 tokio       = { version = "1", features = ["full"] }
