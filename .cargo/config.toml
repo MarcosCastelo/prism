@@ -1,0 +1,6 @@
+[target.x86_64-pc-windows-msvc]
+# Use clang-cl (LLVM/scoop) as the C compiler so ring's MSVC-style flags work.
+# ring compiles C files for QUIC (quinn/rustls) and Noise (snow).
+# clang-cl understands /GS, /EHsc, /Gy and other MSVC flags.
+[env]
+CC_x86_64_pc_windows_msvc = "clang-cl"

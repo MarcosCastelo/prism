@@ -1,0 +1,11 @@
+syntax = "proto3";
+package prism;
+
+message ChunkTransfer {
+  bytes  sender_node_id = 1;
+  bytes  sender_pubkey  = 2;
+  bytes  payload        = 3;
+  bytes  payload_hash   = 4;
+  bytes  signature      = 5;
+  uint64 timestamp_ms   = 6;
+}
