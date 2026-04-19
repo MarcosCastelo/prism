@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, State, Window};
+use tauri::{State, Window};
 use tokio::sync::Mutex;
 
 use crate::events::emit_metrics_loop;

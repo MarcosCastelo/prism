@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-use tauri::Window;
+use tauri::{Emitter, Window};
 
 use crate::commands::StreamMetrics;
 
