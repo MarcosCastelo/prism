@@ -1,0 +1,26 @@
+[package]
+name = "prism-ingest"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+# Enable camera capture via nokhwa (requires libclang + platform camera SDK).
+# On Windows: set CC_x86_64_pc_windows_msvc=cl.exe (MSVC) before enabling,
+# since mozjpeg-sys (transitive dep) uses MSVC intrinsics incompatible with clang-cl.
+camera = ["dep:nokhwa"]
+
+[dependencies]
+prism-core    = { path = "../prism-core" }
+prism-proto   = { path = "../prism-proto" }
+prism-encoder = { path = "../prism-encoder" }
+anyhow        = "1"
+tracing       = "0.1"
+tokio         = { version = "1", features = ["full"] }
+rml_rtmp      = "0.8"
+bytes         = "1"
+prost         = "0.13"
+hex           = "0.4"
+nokhwa        = { version = "0.10", features = ["input-native"], optional = true }
+
+[dev-dependencies]
+ed25519-dalek = "2"

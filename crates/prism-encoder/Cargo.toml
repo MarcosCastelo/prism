@@ -1,0 +1,13 @@
+[package]
+name = "prism-encoder"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+prism-core = { path = "../prism-core" }
+anyhow     = "1"
+tracing    = "0.1"
+sha2       = "0.10"
+
+[build-dependencies]
+bindgen = "0.69"

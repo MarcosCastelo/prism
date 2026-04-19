@@ -6,9 +6,13 @@ use libp2p::futures::StreamExt;
 use tokio::sync::Mutex;
 use tracing_subscriber::EnvFilter;
 
+mod classes;
 mod config;
+mod erasure;
+mod sync;
 mod dht;
 mod health;
+mod relay;
 mod transfer;
 mod transport;
 
