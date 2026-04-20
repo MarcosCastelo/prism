@@ -7,6 +7,10 @@ fn main() {
         &[
             proto_dir.join("node_record.proto"),
             proto_dir.join("chunk_transfer.proto"),
+            proto_dir.join("video_chunk.proto"),
+            proto_dir.join("hls_manifest.proto"),
+            proto_dir.join("rs_fragment.proto"),
+            proto_dir.join("nack_request.proto"),
         ],
         &[proto_dir],
     )

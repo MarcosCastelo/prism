@@ -1,0 +1,11 @@
+syntax = "proto3";
+package prism;
+
+message HlsManifest {
+  string stream_id    = 1;
+  uint64 sequence     = 2;
+  bytes  master_m3u8  = 3;
+  bytes  media_m3u8   = 4;
+  bytes  node_pubkey  = 5;
+  bytes  node_sig     = 6;
+}

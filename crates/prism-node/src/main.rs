@@ -6,14 +6,10 @@ use libp2p::futures::StreamExt;
 use tokio::sync::Mutex;
 use tracing_subscriber::EnvFilter;
 
-mod config;
-mod dht;
-mod health;
-mod transfer;
-mod transport;
+use prism_node::{classes, config, dht, health, transfer, transport};
 
 use config::{Cli, Config};
-use dht::record::{DhtRecordManager};
+use dht::record::DhtRecordManager;
 use prism_proto::NodeRecord;
 use prost::Message as _;
 use health::benchmark::run_benchmark;
@@ -95,6 +91,26 @@ async fn main() -> anyhow::Result<()> {
             .publish_once(&mut sw.behaviour_mut().kademlia)
             .await
             .context("initial DHT publish")?;
+    }
+
+    // Start edge HTTP server (HLS delivery) and TCP chunk receiver in background.
+    let edge_state = classes::edge::EdgeState::new();
+    {
+        let es = edge_state.clone();
+        tokio::spawn(async move {
+            if let Err(e) = classes::edge::run_edge_server("0.0.0.0:8080", es).await {
+                tracing::error!("edge HTTP server error: {e}");
+            }
+        });
+    }
+    {
+        let es = edge_state.clone();
+        let id = Arc::clone(&identity);
+        tokio::spawn(async move {
+            if let Err(e) = transfer::chunk_receiver::run_chunk_receiver("0.0.0.0:4002", id, es).await {
+                tracing::error!("chunk receiver error: {e}");
+            }
+        });
     }
 
     tracing::info!("prism-node running");

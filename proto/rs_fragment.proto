@@ -1,0 +1,12 @@
+syntax = "proto3";
+package prism;
+
+message RsFragment {
+  string stream_id   = 1;
+  uint64 chunk_seq   = 2;
+  uint32 frag_index  = 3;
+  uint32 total_frags = 4;
+  uint32 data_frags  = 5;
+  bytes  fragment    = 6;
+  bytes  chunk_hash  = 7;
+}
