@@ -7,11 +7,12 @@ use std::sync::Arc;
 
 use axum::{
     extract::{Path, State},
-    http::StatusCode,
+    http::{Method, StatusCode},
     response::{IntoResponse, Response},
     routing::get,
     Router,
 };
+use tower_http::cors::{Any, CorsLayer};
 use prism_core::hash::sha256;
 use prism_proto::{HlsManifest, VideoChunk};
 use tokio::net::TcpListener;
@@ -168,10 +169,16 @@ impl Default for EdgeState {
 ///   GET /{stream_id}/{layer}/media.m3u8   → HLS media playlist for a layer
 ///   GET /{stream_id}/{sequence}.m4s       → raw fMP4 segment
 pub fn build_edge_router(state: EdgeState) -> Router {
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods([Method::GET])
+        .allow_headers(Any);
+
     Router::new()
         .route("/{stream_id}/master.m3u8", get(handle_master))
         .route("/{stream_id}/{layer}/media.m3u8", get(handle_media))
         .route("/{stream_id}/{sequence}.m4s", get(handle_segment))
+        .layer(cors)
         .with_state(state)
 }
 

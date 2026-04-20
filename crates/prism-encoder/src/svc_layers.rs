@@ -118,15 +118,32 @@ pub fn strip_to_layer(payload: &[u8], max_layer: u8) -> Result<(Vec<u8>, Vec<[u8
 /// Compute per-layer SHA-256 hashes for a full (un-stripped) chunk payload.
 ///
 /// Called by the injector when building `VideoChunk.layer_hashes`.
+///
+/// If the payload is not valid AV1 fMP4 (e.g. raw H.264 from RTMP during
+/// development without a real SVT-AV1 encoder), falls back to a single
+/// hash of the full payload treated as layer 0.
 pub fn compute_layer_hashes(payload: &[u8], n_layers: u8) -> Result<Vec<[u8; 32]>> {
     if n_layers == 0 || n_layers > 4 {
         return Err(anyhow!("n_layers must be 1–4, got {n_layers}"));
     }
     let mut hashes = Vec::with_capacity(n_layers as usize);
     for layer in 0..n_layers {
-        let (stripped, _) = strip_to_layer(payload, layer)?;
-        let hash: [u8; 32] = Sha256::digest(&stripped).into();
-        hashes.push(hash);
+        match strip_to_layer(payload, layer) {
+            Ok((stripped, _)) => {
+                let hash: [u8; 32] = Sha256::digest(&stripped).into();
+                hashes.push(hash);
+            }
+            Err(_) => {
+                // Payload is not valid AV1 fMP4 (e.g. raw H.264 from RTMP).
+                // Fall back: treat full payload as layer 0 and stop.
+                tracing::debug!(
+                    n_layers,
+                    "payload is not AV1 fMP4 — falling back to single-layer hash"
+                );
+                let hash: [u8; 32] = Sha256::digest(payload).into();
+                return Ok(vec![hash]);
+            }
+        }
     }
     Ok(hashes)
 }
