@@ -3,13 +3,19 @@ import { invoke, isTauri } from "@tauri-apps/api/core";
 import { Preview } from "./components/Preview";
 import { NetworkHealth } from "./components/NetworkHealth";
 import { EncodeSettings } from "./components/EncodeSettings";
+import { Onboarding } from "./components/Onboarding";
+import { OBSGuide } from "./components/OBSGuide";
+import { NodeTree } from "./components/NodeTree";
+import { EarningsPanel } from "./components/EarningsPanel";
 
 export default function App() {
+  const [onboardingDone, setOnboardingDone] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamId, setStreamId] = useState<string | null>(null);
   const [preset, setPreset] = useState("high");
   const [hwAccel, setHwAccel] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showOBSGuide, setShowOBSGuide] = useState(false);
 
   async function handleGoLive() {
     setError(null);
@@ -46,6 +52,10 @@ export default function App() {
     }
   }
 
+  if (!onboardingDone) {
+    return <Onboarding onComplete={() => setOnboardingDone(true)} />;
+  }
+
   return (
     <div
       style={{
@@ -58,7 +68,9 @@ export default function App() {
         boxSizing: "border-box",
       }}
     >
-      {/* Left column: preview */}
+      {showOBSGuide && <OBSGuide onClose={() => setShowOBSGuide(false)} />}
+
+      {/* Left column: preview + node tree */}
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <Preview isStreaming={isStreaming} />
         {streamId && (
@@ -78,9 +90,10 @@ export default function App() {
             {error}
           </div>
         )}
+        <NodeTree />
       </div>
 
-      {/* Right column: controls */}
+      {/* Right column: controls + earnings */}
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <NetworkHealth
           isStreaming={isStreaming}
@@ -94,6 +107,22 @@ export default function App() {
           onHwAccelChange={setHwAccel}
           disabled={isStreaming}
         />
+        <EarningsPanel channelState={null} />
+        <button
+          style={{
+            padding: "8px 14px",
+            background: "transparent",
+            border: "1px solid #2d3748",
+            borderRadius: 6,
+            color: "#718096",
+            fontSize: 12,
+            cursor: "pointer",
+            textAlign: "left",
+          }}
+          onClick={() => setShowOBSGuide(true)}
+        >
+          📡 Como conectar o OBS?
+        </button>
       </div>
     </div>
   );

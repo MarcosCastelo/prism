@@ -1,0 +1,14 @@
+syntax = "proto3";
+package prism;
+
+message ChatMessage {
+  string id            = 1; // SHA-256(sender_pubkey || text || timestamp_ms) hex
+  bytes  sender_pubkey = 2; // Ed25519 pubkey — 32 bytes
+  string display_name  = 3; // nome escolhido pelo usuário — texto livre, max 32 chars UTF-8
+  string stream_id     = 4; // stream a que esta mensagem pertence
+  string text          = 5; // conteúdo — max 500 chars UTF-8
+  uint64 timestamp_ms  = 6; // wall clock Unix ms — NÃO sincronizado com vídeo
+  string prev_msg_id   = 7; // id da última mensagem que o sender viu (prev-hash chain)
+  bytes  signature     = 8; // Ed25519Sign(privkey, SHA-256(campos 1-7 concatenados))
+  map<string, uint64> vector_clock = 9; // pubkey_hex → contador causal
+}

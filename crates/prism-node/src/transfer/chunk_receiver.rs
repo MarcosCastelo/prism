@@ -169,7 +169,7 @@ mod tests {
                 let e2 = e.clone();
                 tokio::spawn(async move {
                     if let Err(err) = handle_connection(stream, &id2, &e2).await {
-                        eprintln!("handle_connection error: {err:#}");
+                        tracing::error!("handle_connection error: {err:#}");
                     }
                 });
             }

@@ -1,10 +1,13 @@
 mod commands;
 mod events;
+mod onboarding;
+pub mod rtmp_server;
 
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use commands::{app_handle, AppState, StreamState};
+use onboarding::init_onboarding_state;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -17,7 +20,9 @@ pub fn run() {
         shutdown_tx: None,
     }));
 
-    app_handle(state)
+    let onboarding = init_onboarding_state();
+
+    app_handle(state, onboarding)
         .run(tauri::generate_context!())
         .expect("error while running Prism Studio");
 }

@@ -1,0 +1,196 @@
+name: Build Prism
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────
+  # Job 1: Rust workspace — test + clippy
+  # ─────────────────────────────────────────────────────────────────────────
+  test:
+    name: Rust tests & clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libsvtav1-dev coturn
+
+      - name: Build workspace
+        run: cargo build --workspace
+
+      - name: Run tests
+        run: cargo test --workspace
+
+      - name: Clippy (warnings → errors)
+        run: cargo clippy --workspace -- -D warnings
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Job 2: Prism Studio desktop build (Win / Mac / Linux)
+  # ─────────────────────────────────────────────────────────────────────────
+  build-studio:
+    name: Studio (${{ matrix.platform }})
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-studio-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-studio-cargo-
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: crates/prism-studio/package-lock.json
+
+      # Linux only: install WebView2 / webkit2gtk dependencies
+      - name: Install Linux GTK/WebKit dependencies
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libsvtav1-dev
+
+      - name: Install Studio npm dependencies
+        run: cd crates/prism-studio && npm ci
+
+      - name: Build Studio (Tauri)
+        uses: tauri-apps/tauri-action@v0
+        with:
+          projectPath: crates/prism-studio
+          tauriScript: cargo tauri
+
+      - name: Upload Studio artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prism-studio-${{ matrix.platform }}
+          path: |
+            crates/prism-studio/src-tauri/target/release/bundle/**/*.deb
+            crates/prism-studio/src-tauri/target/release/bundle/**/*.AppImage
+            crates/prism-studio/src-tauri/target/release/bundle/**/*.dmg
+            crates/prism-studio/src-tauri/target/release/bundle/**/*.msi
+          if-no-files-found: ignore
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Job 3: Player web (Vite) + Player mobile (Expo web export)
+  # ─────────────────────────────────────────────────────────────────────────
+  build-players:
+    name: Build web + mobile players
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # ── Player web (React + HLS.js) ──────────────────────────────────────
+      - name: Install Player web deps
+        run: cd crates/prism-player && npm ci
+
+      - name: Build Player web
+        run: cd crates/prism-player && npm run build
+
+      - name: Upload Player web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prism-player-web
+          path: crates/prism-player/dist/
+
+      # ── Player mobile (Expo web export) ─────────────────────────────────
+      - name: Install Player mobile deps
+        run: cd crates/prism-player-mobile && npm ci
+
+      - name: Expo web export (smoke test)
+        run: |
+          cd crates/prism-player-mobile
+          npx expo export --platform web
+        env:
+          # Suppress interactive prompts in CI.
+          CI: "true"
+          EXPO_NO_TELEMETRY: "1"
+
+      - name: Upload Player mobile web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prism-player-mobile-web
+          path: crates/prism-player-mobile/dist/
+          if-no-files-found: ignore
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Job 4: Load & chaos test stubs (validate test scripts parse cleanly)
+  # ─────────────────────────────────────────────────────────────────────────
+  validate-test-scripts:
+    name: Validate load/chaos scripts
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring \
+            --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
+            --keyserver hkp://keyserver.ubuntu.com:80 \
+            --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] \
+            https://dl.k6.io/deb stable main" \
+            | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update -qq
+          sudo apt-get install -y k6
+
+      - name: Validate Scenario 1 k6 script (dry-run)
+        run: k6 run --dry-run tests/load/scenario1_10k_viewers.js
+
+      - name: Validate shell scripts
+        run: bash -n tests/chaos/scenario2_node_crash.sh

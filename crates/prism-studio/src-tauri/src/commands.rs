@@ -150,10 +150,24 @@ pub async fn get_metrics(state: State<'_, AppState>) -> Result<StreamMetrics, St
 }
 
 /// Build the Tauri application with all commands registered.
-pub fn app_handle(state: AppState) -> tauri::Builder<tauri::Wry> {
+pub fn app_handle(
+    state: AppState,
+    onboarding: crate::onboarding::OnboardingState,
+) -> tauri::Builder<tauri::Wry> {
     tauri::Builder::default()
         .manage(state)
-        .invoke_handler(tauri::generate_handler![start_stream, stop_stream, get_metrics])
+        .manage(onboarding)
+        .invoke_handler(tauri::generate_handler![
+            start_stream,
+            stop_stream,
+            get_metrics,
+            crate::onboarding::onboarding_status,
+            crate::onboarding::onboarding_generate_identity,
+            crate::onboarding::onboarding_export_backup,
+            crate::onboarding::onboarding_run_benchmark,
+            crate::onboarding::onboarding_set_source,
+            crate::onboarding::onboarding_complete,
+        ])
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

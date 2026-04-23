@@ -1,0 +1,15 @@
+[package]
+name = "prism-payments"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+prism-core     = { path = "../prism-core" }
+tokio          = { version = "1", features = ["full"] }
+anyhow         = "1"
+thiserror      = "1"
+tracing        = "0.1"
+serde          = { version = "1", features = ["derive"] }
+hex            = "0.4"
+async-trait    = "0.1"
+ed25519-dalek  = { version = "2", features = ["rand_core"] }

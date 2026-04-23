@@ -11,6 +11,9 @@ fn main() {
             proto_dir.join("hls_manifest.proto"),
             proto_dir.join("rs_fragment.proto"),
             proto_dir.join("nack_request.proto"),
+            proto_dir.join("chat_message.proto"),
+            proto_dir.join("anchor_record.proto"),
+            proto_dir.join("blocklist.proto"),
         ],
         &[proto_dir],
     )

@@ -1,0 +1,16 @@
+syntax = "proto3";
+package prism;
+
+message BlocklistEntry {
+  bytes  blocked_pubkey = 1; // pubkey bloqueada
+  string reason         = 2; // opcional — máx 100 chars
+  uint64 blocked_at_ms  = 3; // quando o bloqueio foi aplicado
+}
+
+message Blocklist {
+  string stream_id         = 1;
+  bytes  streamer_pubkey   = 2;
+  repeated BlocklistEntry entries = 3;
+  uint64 version           = 4; // incrementado a cada atualização — peers usam versão mais alta
+  bytes  signature         = 5; // Ed25519Sign(streamer_privkey, SHA-256(campos 1-4))
+}

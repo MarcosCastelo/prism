@@ -5,18 +5,28 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "react": "^18",
     "react-dom": "^18",
-    "hls.js": "^1.5"
+    "hls.js": "^1.5",
+    "@noble/ed25519": "^2",
+    "@noble/hashes": "^1",
+    "idb": "^8"
   },
   "devDependencies": {
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "typescript": "^5",
     "vite": "^5",
-    "@vitejs/plugin-react": "^4"
+    "@vitejs/plugin-react": "^4",
+    "vitest": "^2",
+    "jsdom": "^25",
+    "@vitest/coverage-v8": "^2",
+    "@testing-library/react": "^16",
+    "fake-indexeddb": "^6"
   }
 }

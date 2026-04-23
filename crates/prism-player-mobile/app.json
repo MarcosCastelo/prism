@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "Prism Player",
+    "slug": "prism-player",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#171923"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.prism.player",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Used for AV1 hardware decode on A17+ chips.",
+        "NSMicrophoneUsageDescription": "Not used."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#171923"
+      },
+      "package": "com.prism.player",
+      "minSdkVersion": 29
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-av",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#4f9cf9"
+        }
+      ]
+    ]
+  }
+}

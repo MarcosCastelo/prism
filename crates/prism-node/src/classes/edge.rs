@@ -149,7 +149,7 @@ impl EdgeState {
         let newer = self
             .manifests
             .get(&manifest.stream_id)
-            .map_or(true, |cur| manifest.sequence > cur.sequence);
+            .is_none_or(|cur| manifest.sequence > cur.sequence);
         if newer {
             self.manifests.insert(manifest.stream_id.clone(), manifest);
         }

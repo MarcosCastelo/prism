@@ -1,0 +1,12 @@
+syntax = "proto3";
+package prism;
+
+message AnchorRecord {
+  bytes  anchor_node_id  = 1; // SHA-256(anchor_pubkey)
+  bytes  anchor_pubkey   = 2; // Ed25519 pubkey do nó anchor
+  string stream_id       = 3;
+  uint32 stored_count    = 4; // número de mensagens armazenadas (máx 500)
+  uint64 oldest_msg_ts   = 5; // timestamp da mensagem mais antiga armazenada
+  uint64 expires_at_ms   = 6; // while stream active — renovado a cada 30s
+  bytes  signature       = 7; // Ed25519Sign(anchor_privkey, hash(campos 1-6))
+}

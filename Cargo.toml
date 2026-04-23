@@ -5,6 +5,9 @@ members = [
     "crates/prism-node",
     "crates/prism-encoder",
     "crates/prism-ingest",
+    "crates/prism-chat",
+    "crates/prism-payments",
+    "crates/prism-telemetry",
     # prism-studio requires Tauri toolchain + WebView2; excluded from workspace tests.
     # Build separately: cd crates/prism-studio && npm run tauri dev
     # "crates/prism-studio/src-tauri",
